@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>fotomu</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Poppins,sans-serif;
+  background:linear-gradient(135deg,#ff9a9e,#fad0c4);
+  min-height:100vh;color:#fff;padding:16px
+}
+.container{max-width:1100px;margin:auto}
+.card{
+  background:rgba(255,255,255,.18);
+  backdrop-filter:blur(12px);
+  border-radius:24px;padding:22px;
+  box-shadow:0 20px 40px rgba(0,0,0,.25)
+}
+
+/* ===== MENU ===== */
+.menu{
+  display:flex;justify-content:center;gap:10px;margin-bottom:18px
+}
+.menu button{
+  background:rgba(255,255,255,.25);
+  border:none;color:#fff;
+  padding:10px 18px;border-radius:30px;
+  cursor:pointer
+}
+.menu button.active{background:#ff5f8a}
+
+/* ===== UPLOAD ===== */
+.upload-area{text-align:center;margin-bottom:20px}
+input[type=file]{display:none}
+.upload-label{
+  display:inline-flex;gap:8px;align-items:center;
+  background:rgba(255,255,255,.25);
+  padding:12px 22px;border-radius:30px;cursor:pointer
+}
+.upload-btn{
+  margin-top:12px;background:#ff5f8a;color:#fff;
+  border:none;padding:12px 26px;border-radius:30px;cursor:pointer
+}
+
+/* ===== GALLERY ===== */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:14px
+}
+.photo{position:relative}
+.photo img{
+  width:100%;height:170px;object-fit:cover;
+  border-radius:16px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.3)
+}
+.delete-btn{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,.6);border:none;color:#fff;
+  width:32px;height:32px;border-radius:50%;cursor:pointer
+}
+.hapus-semua{
+  margin-top:22px;width:100%;
+  background:#111;color:#fff;border:none;
+  padding:14px;border-radius:30px;cursor:pointer
+}
+
+/* ===== VIEWER ===== */
+.viewer{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;z-index:999
+}
+.viewer img{
+  max-width:92%;max-height:92%;
+  border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.6)
+}
+.viewer .close{
+  position:absolute;top:18px;right:18px;
+  font-size:26px;cursor:pointer
+}
+
+@media(max-width:600px){
+  .photo img{height:140px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+  <div class="card">
+    <h2 style="text-align:center;margin:0">
+      <i class="fa-solid fa-heart"></i> fotomu
+    </h2>
+    <p style="text-align:center;opacity:.9">
+      Kenangan kecil yang disimpan dengan rasa besar 💕
+    </p>
+
+    <!-- MENU -->
+    <div class="menu">
+      <button id="btnUpload" class="active">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+      </button>
+      <button id="btnKoleksi">
+        <i class="fa-solid fa-images"></i> Koleksi
+      </button>
+    </div>
+
+    <!-- UPLOAD SECTION -->
+    <div id="uploadSection" class="upload-area">
+      <form method="POST" action="/upload" enctype="multipart/form-data">
+        <label class="upload-label">
+          <i class="fa-solid fa-images"></i>
+          Pilih Foto
+          <input type="file" name="foto" multiple accept="image/*" required>
+        </label><br>
+        <button class="upload-btn">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Upload
+        </button>
+      </form>
+    </div>
+
+    <!-- KOLEKSI -->
+    <div id="koleksiSection" style="display:none">
+      <div class="grid" id="gallery"></div>
+      <form method="POST" action="/hapus-semua">
+        <button class="hapus-semua">
+          <i class="fa-solid fa-heart"></i> Hapus Semua
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- VIEWER -->
+<div class="viewer" id="viewer">
+  <i class="fa-solid fa-xmark close" onclick="closeViewer()"></i>
+  <img id="viewerImg">
+</div>
+
+<script>
+const btnUpload = document.getElementById("btnUpload");
+const btnKoleksi = document.getElementById("btnKoleksi");
+const uploadSection = document.getElementById("uploadSection");
+const koleksiSection = document.getElementById("koleksiSection");
+const gallery = document.getElementById("gallery");
+
+btnUpload.onclick = () => {
+  btnUpload.classList.add("active");
+  btnKoleksi.classList.remove("active");
+  uploadSection.style.display="block";
+  koleksiSection.style.display="none";
+};
+
+btnKoleksi.onclick = () => {
+  btnKoleksi.classList.add("active");
+  btnUpload.classList.remove("active");
+  uploadSection.style.display="none";
+  koleksiSection.style.display="block";
+};
+
+// load koleksi
+fetch("/cek-foto").then(r=>r.json()).then(files=>{
+  gallery.innerHTML="";
+  files.forEach(f=>{
+    gallery.innerHTML+=`
+      <div class="photo">
+        <img src="/fotomu/${f}" onclick="openViewer('/fotomu/${f}')">
+        <form method="POST" action="/hapus/${f}">
+          <button class="delete-btn">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </form>
+      </div>
+    `;
+  });
+});
+
+// viewer
+function openViewer(src){
+  document.getElementById("viewerImg").src=src;
+  document.getElementById("viewer").style.display="flex";
+}
+function closeViewer(){
+  document.getElementById("viewer").style.display="none";
+}
+</script>
+
+</body>
+</html>
