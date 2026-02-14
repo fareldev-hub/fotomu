@@ -2,17 +2,21 @@ const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const archiver = require("archiver");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const FOTO_DIR = path.join(__dirname, "fotomu");
+// Path Adaptif: Vercel (/tmp) atau Lokal (__dirname)
+const ROOT_DIR = process.env.VERCEL ? "/tmp" : __dirname;
+const FOTO_DIR = path.join(ROOT_DIR, "fotomu");
+const FAV_DIR = path.join(FOTO_DIR, "Favorit");
 
-if (!fs.existsSync(FOTO_DIR)) {
-  fs.mkdirSync(FOTO_DIR);
-}
+// Inisialisasi Folder
+[FOTO_DIR, FAV_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
-// config multer (banyak foto)
 const storage = multer.diskStorage({
   destination: FOTO_DIR,
   filename: (req, file, cb) => {
@@ -24,37 +28,81 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.use(express.static("public"));
-app.use("/fotomu", express.static("fotomu"));
+app.use("/fotomu", express.static(FOTO_DIR));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ambil semua foto
+// Ambil List Foto
 app.get("/cek-foto", (req, res) => {
-  const files = fs.readdirSync(FOTO_DIR);
+  const folder = req.query.folder || "";
+  const targetPath = path.join(FOTO_DIR, folder);
+  
+  if (!fs.existsSync(targetPath)) return res.json([]);
+  
+  const files = fs.readdirSync(targetPath).filter(f => {
+    return fs.lstatSync(path.join(targetPath, f)).isFile();
+  });
   res.json(files);
 });
 
-// upload banyak foto
-app.post("/upload", upload.array("foto", 10), (req, res) => {
-  res.redirect("/");
-});
-
-// hapus satu foto
-app.post("/hapus/:nama", (req, res) => {
-  const filePath = path.join(FOTO_DIR, req.params.nama);
-  if (fs.existsSync(filePath)) {
-    fs.unlinkSync(filePath);
+// Fitur Like (Pindah ke Favorit)
+app.post("/like/:nama", (req, res) => {
+  const oldPath = path.join(FOTO_DIR, req.params.nama);
+  const newPath = path.join(FAV_DIR, req.params.nama);
+  
+  try {
+    if (fs.existsSync(oldPath)) {
+      fs.renameSync(oldPath, newPath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "File tidak ditemukan" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
+});
+
+// Upload
+app.post("/upload", upload.array("foto", 20), (req, res) => {
   res.redirect("/");
 });
 
-// hapus semua foto
-app.post("/hapus-semua", (req, res) => {
-  fs.readdirSync(FOTO_DIR).forEach(file => {
-    fs.unlinkSync(path.join(FOTO_DIR, file));
-  });
-  res.redirect("/");
+// Download ZIP
+app.post("/download-zip", (req, res) => {
+  const { files, folder } = req.body;
+  const archive = archiver("zip", { zlib: { level: 9 } });
+  
+  res.attachment(`backup-${folder || 'semua'}.zip`);
+  archive.pipe(res);
+  
+  const targetDir = path.join(FOTO_DIR, folder || "");
+  
+  if (files && files.length > 0) {
+    files.forEach(f => {
+      const p = path.join(targetDir, f);
+      if (fs.existsSync(p)) archive.file(p, { name: f });
+    });
+  } else {
+    archive.directory(targetDir, false);
+  }
+  archive.finalize();
 });
 
-app.listen(PORT, () => {
-  console.log("Fotomu jalan di port " + PORT);
+// Hapus Foto (Fixed Path)
+app.post("/hapus", (req, res) => {
+  const { nama, folder } = req.body;
+  const filePath = path.join(FOTO_DIR, folder || "", nama);
+  
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "File tidak ditemukan" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+app.listen(PORT, () => console.log(`Album jalan di port ${PORT}`));

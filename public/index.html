@@ -1,226 +1,263 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>fotomu</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Album</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #007AFF; --bg: #f2f2f7; --card: #ffffff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg); color: #1c1c1e; padding-bottom: 100px;
+        }
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+        /* HEADER */
+        header {
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px);
+            padding: 20px; sticky; top: 0; z-index: 100; border-bottom: 0.5px solid #d1d1d6;
+        }
+        .header-content { max-width: 1000px; margin: auto; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-<style>
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:Poppins,sans-serif;
-  background:linear-gradient(135deg,#ff9a9e,#fad0c4);
-  min-height:100vh;color:#fff;padding:16px
-}
-.container{max-width:1100px;margin:auto}
-.card{
-  background:rgba(255,255,255,.18);
-  backdrop-filter:blur(12px);
-  border-radius:24px;padding:22px;
-  box-shadow:0 20px 40px rgba(0,0,0,.25)
-}
+        /* NAVIGATION TABS */
+        .nav-tabs {
+            max-width: 1000px; margin: 20px auto; display: flex; gap: 8px; padding: 0 15px;
+            overflow-x: auto; scrollbar-width: none;
+        }
+        .tab {
+            padding: 10px 20px; background: #e5e5ea; border-radius: 12px;
+            font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; border:none;
+        }
+        .tab.active { background: var(--accent); color: white; }
 
-/* MENU */
-.menu{
-  display:flex;justify-content:center;gap:10px;margin-bottom:18px
-}
-.menu button{
-  background:rgba(255,255,255,.25);
-  border:none;color:#fff;
-  padding:10px 18px;border-radius:30px;
-  cursor:pointer
-}
-.menu button.active{background:#ff5f8a}
+        /* ALBUM GRID */
+        .container { max-width: 1000px; margin: auto; padding: 0 15px; }
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 4px; /* Gap kecil khas gallery iPhone */
+        }
+        @media(min-width: 600px) { .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; } }
 
-/* UPLOAD */
-.upload-area{text-align:center;margin-bottom:20px}
-input[type=file]{display:none}
-.upload-label{
-  display:inline-flex;gap:8px;align-items:center;
-  background:rgba(255,255,255,.25);
-  padding:12px 22px;border-radius:30px;cursor:pointer
-}
-.upload-btn{
-  margin-top:12px;background:#ff5f8a;color:#fff;
-  border:none;padding:12px 26px;border-radius:30px;cursor:pointer
-}
-.batal-btn{
-  background:#333;margin-left:8px
-}
+        .photo-card {
+            aspect-ratio: 1/1; position: relative; overflow: hidden; border-radius: 8px;
+            background: #d1d1d6; cursor: pointer;
+        }
+        .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .photo-card:hover img { transform: scale(1.05); }
 
-/* GRID */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-  gap:14px;margin-top:16px
-}
-.photo img{
-  width:100%;height:170px;object-fit:cover;
-  border-radius:16px;
-  box-shadow:0 8px 20px rgba(0,0,0,.3)
-}
+        /* SELECTION & LIKE ICON */
+        .select-dot {
+            position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
+            background: rgba(255,255,255,0.7); border-radius: 50%; border: 1.5px solid #fff;
+            display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
+        .select-dot input { opacity: 0; position: absolute; cursor: pointer; width: 100%; height: 100%; }
+        .select-dot:has(input:checked) { background: var(--accent); }
+        .select-dot:has(input:checked)::after { content: '✓'; color: white; font-size: 12px; }
 
-/* KOLEKSI */
-.delete-btn{
-  position:absolute;top:8px;right:8px;
-  background:rgba(0,0,0,.6);border:none;color:#fff;
-  width:32px;height:32px;border-radius:50%;cursor:pointer
-}
-.hapus-semua{
-  margin-top:22px;width:100%;
-  background:#111;color:#fff;border:none;
-  padding:14px;border-radius:30px;cursor:pointer
-}
+        /* FLOATING FOOTER ACTIONS */
+        .footer-bar {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(15px);
+            padding: 12px 25px; border-radius: 30px; display: flex; gap: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 0.5px solid #d1d1d6; z-index: 100;
+        }
+        .btn-action { background: none; border: none; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
-/* VIEWER */
-.viewer{
-  position:fixed;inset:0;background:rgba(0,0,0,.85);
-  display:none;align-items:center;justify-content:center;z-index:999
-}
-.viewer img{
-  max-width:92%;max-height:92%;
-  border-radius:18px
-}
-.viewer .close{
-  position:absolute;top:18px;right:18px;
-  font-size:26px;cursor:pointer
-}
-</style>
+        /* MODAL / VIEWER */
+        .modal {
+            position: fixed; inset: 0; background: #fff; z-index: 200;
+            display: none; flex-direction: column;
+        }
+        .modal-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
+        .modal-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        /* PREVIEW GRID IN UPLOAD */
+        #previewArea { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
+        
+        /* UTILS */
+        .hidden { display: none !important; }
+    </style>
 </head>
-
 <body>
-<div class="container">
-  <div class="card">
-    <h2 style="text-align:center;margin:0">
-      <i class="fa-solid fa-heart"></i> fotomu
-    </h2>
-    <p style="text-align:center;opacity:.9">
-      Kenangan kecil yang disimpan dengan rasa besar 💕
-    </p>
 
-    <!-- MENU -->
-    <div class="menu">
-      <button id="btnUpload" class="active">
-        <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-      </button>
-      <button id="btnKoleksi">
-        <i class="fa-solid fa-images"></i> Koleksi
-      </button>
+<header>
+    <div class="header-content">
+        <h1>Library</h1>
+        <button class="btn-action" onclick="toggleUploadModal()"><i class="fa-solid fa-plus-circle fa-2xl"></i></button>
     </div>
+</header>
 
-    <!-- UPLOAD -->
-    <div id="uploadSection" class="upload-area">
-      <form method="POST" action="/upload" enctype="multipart/form-data">
-        <label class="upload-label">
-          <i class="fa-solid fa-images"></i>
-          Pilih Foto
-          <input type="file" name="foto" multiple accept="image/*" required id="fileInput">
-        </label>
-
-        <!-- PREVIEW -->
-        <div id="preview" class="grid"></div>
-
-        <div>
-          <button class="upload-btn">
-            <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-          </button>
-          <button type="button" class="upload-btn batal-btn" id="btnBatal">
-            <i class="fa-solid fa-xmark"></i> Batalkan
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- KOLEKSI -->
-    <div id="koleksiSection" style="display:none">
-      <div class="grid" id="gallery"></div>
-      <form method="POST" action="/hapus-semua">
-        <button class="hapus-semua">
-          <i class="fa-solid fa-heart"></i> Hapus Semua
-        </button>
-      </form>
-    </div>
-  </div>
+<div class="nav-tabs">
+    <button class="tab active" onclick="switchFolder('', this)">Semua Foto</button>
+    <button class="tab" onclick="switchFolder('Favorit', this)">Favorit ❤️</button>
 </div>
 
-<!-- VIEWER -->
-<div class="viewer" id="viewer">
-  <i class="fa-solid fa-xmark close" onclick="closeViewer()"></i>
-  <img id="viewerImg">
+<div class="container">
+    <div class="grid" id="galleryGrid">
+        </div>
+</div>
+
+<div class="footer-bar">
+    <button class="btn-action" onclick="downloadSelected()"><i class="fa-solid fa-file-zipper"></i><span>Zip</span></button>
+    <button class="btn-action" onclick="deleteSelected()" style="color: #ff3b30;"><i class="fa-solid fa-trash"></i><span>Hapus</span></button>
+</div>
+
+<div class="modal" id="uploadModal">
+    <div class="modal-header">
+        <button class="btn-action" onclick="toggleUploadModal()">Batal</button>
+        <h3 style="margin:0">Tambah Foto</h3>
+        <button class="btn-action" id="btnSimpan" onclick="document.getElementById('formUpload').submit()" style="opacity: 0.3;" disabled>Simpan</button>
+    </div>
+    <div style="padding: 20px; text-align: center;">
+        <form id="formUpload" action="/upload" method="POST" enctype="multipart/form-data">
+            <label style="background: var(--accent); color: white; padding: 15px 30px; border-radius: 15px; display: inline-block; cursor: pointer; font-weight: 600;">
+                <i class="fa-solid fa-images"></i> Pilih Foto dari Galeri
+                <input type="file" name="foto" id="fileInput" multiple accept="image/*" class="hidden">
+            </label>
+        </form>
+        <div id="previewArea" class="grid"></div>
+    </div>
+</div>
+
+<div class="modal" id="viewerModal">
+    <div class="modal-header">
+        <button class="btn-action" onclick="closeViewer()"><i class="fa-solid fa-chevron-left"></i> Kembali</button>
+        <div style="display: flex; gap: 20px;">
+            <button class="btn-action" id="btnLikeModal"><i class="fa-regular fa-heart"></i></button>
+            <button class="btn-action" id="btnHapusModal" style="color: #ff3b30;"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    </div>
+    <div class="modal-body">
+        <img id="imgFull">
+    </div>
 </div>
 
 <script>
-const btnUpload = document.getElementById("btnUpload");
-const btnKoleksi = document.getElementById("btnKoleksi");
-const uploadSection = document.getElementById("uploadSection");
-const koleksiSection = document.getElementById("koleksiSection");
-const gallery = document.getElementById("gallery");
+    let currentFolder = "";
+    let selectedPhoto = "";
 
-// MENU
-btnUpload.onclick = () => {
-  btnUpload.classList.add("active");
-  btnKoleksi.classList.remove("active");
-  uploadSection.style.display="block";
-  koleksiSection.style.display="none";
-};
-btnKoleksi.onclick = () => {
-  btnKoleksi.classList.add("active");
-  btnUpload.classList.remove("active");
-  uploadSection.style.display="none";
-  koleksiSection.style.display="block";
-};
+    async function loadGallery() {
+        const res = await fetch(`/cek-foto?folder=${currentFolder}`);
+        const files = await res.json();
+        const grid = document.getElementById('galleryGrid');
+        grid.innerHTML = "";
 
-// PREVIEW
-const fileInput = document.getElementById("fileInput");
-const preview = document.getElementById("preview");
-const btnBatal = document.getElementById("btnBatal");
+        if(files.length === 0) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.5;">Kosong</p>`;
+            return;
+        }
 
-fileInput.addEventListener("change", () => {
-  preview.innerHTML="";
-  [...fileInput.files].forEach(file=>{
-    if(!file.type.startsWith("image/"))return;
-    const reader=new FileReader();
-    reader.onload=e=>{
-      preview.innerHTML+=`<div class="photo"><img src="${e.target.result}"></div>`;
+        files.forEach(f => {
+            const div = document.createElement('div');
+            div.className = 'photo-card';
+            const imgPath = `/fotomu/${currentFolder ? currentFolder+'/'+f : f}`;
+            div.innerHTML = `
+                <div class="select-dot"><input type="checkbox" name="pilih" value="${f}"></div>
+                <img src="${imgPath}" onclick="openViewer('${f}', '${imgPath}')" loading="lazy">
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    // FOLDER SWITCH
+    function switchFolder(name, el) {
+        currentFolder = name;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        loadGallery();
+    }
+
+    // VIEWER LOGIC
+    function openViewer(name, path) {
+        selectedPhoto = name;
+        document.getElementById('imgFull').src = path;
+        document.getElementById('viewerModal').style.display = 'flex';
+        // Hide/Show Like button based on folder
+        document.getElementById('btnLikeModal').className = currentFolder === 'Favorit' ? 'hidden' : 'btn-action';
+    }
+
+    function closeViewer() { document.getElementById('viewerModal').style.display = 'none'; }
+
+    // UPLOAD PREVIEW
+    document.getElementById('fileInput').onchange = function() {
+        const preview = document.getElementById('previewArea');
+        const btn = document.getElementById('btnSimpan');
+        preview.innerHTML = "";
+        
+        if(this.files.length > 0) {
+            btn.disabled = false; btn.style.opacity = "1";
+            [...this.files].forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const d = document.createElement('div');
+                    d.className = 'photo-card';
+                    d.innerHTML = `<img src="${e.target.result}">`;
+                    preview.appendChild(d);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
     };
-    reader.readAsDataURL(file);
-  });
-});
 
-// BATALKAN UNGGAHAN
-btnBatal.onclick = () => {
-  fileInput.value="";
-  preview.innerHTML="";
-};
+    function toggleUploadModal() {
+        const m = document.getElementById('uploadModal');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    }
 
-// LOAD KOLEKSI
-fetch("/cek-foto").then(r=>r.json()).then(files=>{
-  gallery.innerHTML="";
-  files.forEach(f=>{
-    gallery.innerHTML+=`
-      <div class="photo" style="position:relative">
-        <img src="/fotomu/${f}" onclick="openViewer('/fotomu/${f}')">
-        <form method="POST" action="/hapus/${f}">
-          <button class="delete-btn">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </form>
-      </div>`;
-  });
-});
+    // ACTIONS
+    async function deleteSelected() {
+        const checked = Array.from(document.querySelectorAll('input[name="pilih"]:checked')).map(i => i.value);
+        if(checked.length === 0) return alert("Pilih foto dulu");
+        if(!confirm(`Hapus ${checked.length} foto?`)) return;
 
-// VIEWER
-function openViewer(src){
-  viewerImg.src=src;
-  viewer.style.display="flex";
-}
-function closeViewer(){
-  viewer.style.display="none";
-}
+        for(let name of checked) {
+            await fetch('/hapus', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nama: name, folder: currentFolder })
+            });
+        }
+        loadGallery();
+    }
+
+    async function downloadSelected() {
+        const checked = Array.from(document.querySelectorAll('input[name="pilih"]:checked')).map(i => i.value);
+        const res = await fetch('/download-zip', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ files: checked, folder: currentFolder })
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Album-${Date.now()}.zip`;
+        a.click();
+    }
+
+    document.getElementById('btnLikeModal').onclick = async () => {
+        await fetch(`/like/${selectedPhoto}`, { method: 'POST' });
+        closeViewer();
+        loadGallery();
+    };
+
+    document.getElementById('btnHapusModal').onclick = async () => {
+        if(!confirm("Hapus foto ini?")) return;
+        await fetch('/hapus', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nama: selectedPhoto, folder: currentFolder })
+        });
+        closeViewer();
+        loadGallery();
+    };
+
+    // INIT
+    loadGallery();
 </script>
-
 </body>
 </html>
