@@ -7,15 +7,16 @@ const archiver = require("archiver");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Path Adaptif: Vercel (/tmp) atau Lokal (__dirname)
+// Path Adaptif: Menggunakan /tmp untuk Vercel (Ephemeral Storage)
 const ROOT_DIR = process.env.VERCEL ? "/tmp" : __dirname;
 const FOTO_DIR = path.join(ROOT_DIR, "fotomu");
 const FAV_DIR = path.join(FOTO_DIR, "Favorit");
 
-// Inisialisasi Folder (Gunakan rekursif agar tidak error di lingkungan serverless)
+// Inisialisasi Folder secara Rekursif
 if (!fs.existsSync(FOTO_DIR)) fs.mkdirSync(FOTO_DIR, { recursive: true });
 if (!fs.existsSync(FAV_DIR)) fs.mkdirSync(FAV_DIR, { recursive: true });
 
+// Konfigurasi Penyimpanan Multer
 const storage = multer.diskStorage({
   destination: FOTO_DIR,
   filename: (req, file, cb) => {
@@ -26,22 +27,38 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// MIDDLEWARE
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// PENTING: Sajikan file statis dari folder 'public'
+// Sajikan File Statis dari folder public (HTML, CSS, JS frontend)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Melayani foto dari folder dinamis (/tmp atau local)
-app.use("/fotomu", express.static(FOTO_DIR));
+/**
+ * FIX UNTUK VERCEL: 
+ * Route khusus untuk melayani file gambar dari folder /tmp.
+ * Tanpa route ini, gambar yang diupload ke /tmp akan tampil BLANK di Vercel.
+ */
+app.get("/fotomu/:folder?/:filename", (req, res) => {
+  const { folder, filename } = req.params;
+  let filePath;
 
-// ROUTE UTAMA: Mengirim index.html (Menghindari "Cannot GET /")
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  // Jika folder kedua ada, berarti mengakses Favorit (fotomu/Favorit/file.jpg)
+  if (filename && folder && folder.toLowerCase() === 'favorit') {
+    filePath = path.join(FAV_DIR, filename);
+  } else {
+    // Jika hanya satu params, berarti folder utama (fotomu/file.jpg)
+    filePath = path.join(FOTO_DIR, folder || filename);
+  }
+
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("File tidak ditemukan");
+  }
 });
 
-// Ambil List Foto
+// Ambil List Foto (Mendukung Subfolder)
 app.get("/cek-foto", (req, res) => {
   const folder = req.query.folder || "";
   const targetPath = path.join(FOTO_DIR, folder);
@@ -58,7 +75,7 @@ app.get("/cek-foto", (req, res) => {
   }
 });
 
-// Fitur Like (Pindah ke Favorit)
+// Fitur Like (Pindahkan file fisik ke folder Favorit)
 app.post("/like/:nama", (req, res) => {
   const oldPath = path.join(FOTO_DIR, req.params.nama);
   const newPath = path.join(FAV_DIR, req.params.nama);
@@ -75,12 +92,12 @@ app.post("/like/:nama", (req, res) => {
   }
 });
 
-// Upload
+// Upload Banyak Foto (Maksimal 20)
 app.post("/upload", upload.array("foto", 20), (req, res) => {
   res.redirect("/");
 });
 
-// Download ZIP
+// Download ZIP (Pilihan atau Semua)
 app.post("/download-zip", (req, res) => {
   const { files, folder } = req.body;
   const archive = archiver("zip", { zlib: { level: 9 } });
@@ -97,7 +114,7 @@ app.post("/download-zip", (req, res) => {
     });
   } else {
     if (fs.existsSync(targetDir)) {
-        archive.directory(targetDir, false);
+      archive.directory(targetDir, false);
     }
   }
   archive.finalize();
@@ -120,9 +137,10 @@ app.post("/hapus", (req, res) => {
   }
 });
 
-// Dengarkan port jika dijalankan secara lokal
+// Jalankan Server lokal jika bukan di production
 if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => console.log(`Album jalan di port ${PORT}`));
+  app.listen(PORT, () => console.log(`Album jalan di port ${PORT}`));
 }
 
+// Ekspor aplikasi untuk Vercel Serverless Functions
 module.exports = app;
