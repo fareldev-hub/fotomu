@@ -12,10 +12,9 @@ const ROOT_DIR = process.env.VERCEL ? "/tmp" : __dirname;
 const FOTO_DIR = path.join(ROOT_DIR, "fotomu");
 const FAV_DIR = path.join(FOTO_DIR, "Favorit");
 
-// Inisialisasi Folder
-[FOTO_DIR, FAV_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+// Inisialisasi Folder (Gunakan rekursif agar tidak error di lingkungan serverless)
+if (!fs.existsSync(FOTO_DIR)) fs.mkdirSync(FOTO_DIR, { recursive: true });
+if (!fs.existsSync(FAV_DIR)) fs.mkdirSync(FAV_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: FOTO_DIR,
@@ -27,10 +26,20 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-app.use(express.static("public"));
-app.use("/fotomu", express.static(FOTO_DIR));
+// MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// PENTING: Sajikan file statis dari folder 'public'
+app.use(express.static(path.join(__dirname, "public")));
+
+// Melayani foto dari folder dinamis (/tmp atau local)
+app.use("/fotomu", express.static(FOTO_DIR));
+
+// ROUTE UTAMA: Mengirim index.html (Menghindari "Cannot GET /")
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 // Ambil List Foto
 app.get("/cek-foto", (req, res) => {
@@ -39,10 +48,14 @@ app.get("/cek-foto", (req, res) => {
   
   if (!fs.existsSync(targetPath)) return res.json([]);
   
-  const files = fs.readdirSync(targetPath).filter(f => {
-    return fs.lstatSync(path.join(targetPath, f)).isFile();
-  });
-  res.json(files);
+  try {
+    const files = fs.readdirSync(targetPath).filter(f => {
+      return fs.lstatSync(path.join(targetPath, f)).isFile();
+    });
+    res.json(files);
+  } catch (e) {
+    res.json([]);
+  }
 });
 
 // Fitur Like (Pindah ke Favorit)
@@ -83,12 +96,14 @@ app.post("/download-zip", (req, res) => {
       if (fs.existsSync(p)) archive.file(p, { name: f });
     });
   } else {
-    archive.directory(targetDir, false);
+    if (fs.existsSync(targetDir)) {
+        archive.directory(targetDir, false);
+    }
   }
   archive.finalize();
 });
 
-// Hapus Foto (Fixed Path)
+// Hapus Foto
 app.post("/hapus", (req, res) => {
   const { nama, folder } = req.body;
   const filePath = path.join(FOTO_DIR, folder || "", nama);
@@ -105,4 +120,9 @@ app.post("/hapus", (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Album jalan di port ${PORT}`));
+// Dengarkan port jika dijalankan secara lokal
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Album jalan di port ${PORT}`));
+}
+
+module.exports = app;

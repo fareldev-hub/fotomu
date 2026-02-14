@@ -7,13 +7,7 @@
     }
   ],
   "routes": [
-    {
-      "src": "/fotomu/(.*)",
-      "dest": "/fotomu/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "server.js"
-    }
+    { "src": "/fotomu/(.*)", "dest": "/fotomu/$1" },
+    { "src": "/(.*)", "dest": "server.js" }
   ]
 }
