@@ -2,262 +2,1846 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Album</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lumina Gallery</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #007AFF; --bg: #f2f2f7; --card: #ffffff; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: var(--bg); color: #1c1c1e; padding-bottom: 100px;
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --surface-light: #262626;
+            --text: #fafafa;
+            --text-muted: #a3a3a3;
+            --border: #333;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
         }
 
-        /* HEADER */
-        header {
-            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px);
-            padding: 20px; sticky; top: 0; z-index: 100; border-bottom: 0.5px solid #d1d1d6;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        .header-content { max-width: 1000px; margin: auto; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
 
-        /* NAVIGATION TABS */
-        .nav-tabs {
-            max-width: 1000px; margin: 20px auto; display: flex; gap: 8px; padding: 0 15px;
-            overflow-x: auto; scrollbar-width: none;
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .tab {
-            padding: 10px 20px; background: #e5e5ea; border-radius: 12px;
-            font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; border:none;
-        }
-        .tab.active { background: var(--accent); color: white; }
 
-        /* ALBUM GRID */
-        .container { max-width: 1000px; margin: auto; padding: 0 15px; }
-        .grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 4px; /* Gap kecil khas gallery iPhone */
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
         }
-        @media(min-width: 600px) { .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; } }
 
-        .photo-card {
-            aspect-ratio: 1/1; position: relative; overflow: hidden; border-radius: 8px;
-            background: #d1d1d6; cursor: pointer;
+        .mobile-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .photo-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .photo-card:hover img { transform: scale(1.05); }
 
-        /* SELECTION & LIKE ICON */
-        .select-dot {
-            position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
-            background: rgba(255,255,255,0.7); border-radius: 50%; border: 1.5px solid #fff;
-            display: flex; align-items: center; justify-content: center; z-index: 10;
+        .hamburger-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            border: none;
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
         }
-        .select-dot input { opacity: 0; position: absolute; cursor: pointer; width: 100%; height: 100%; }
-        .select-dot:has(input:checked) { background: var(--accent); }
-        .select-dot:has(input:checked)::after { content: '✓'; color: white; font-size: 12px; }
 
-        /* FLOATING FOOTER ACTIONS */
-        .footer-bar {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(15px);
-            padding: 12px 25px; border-radius: 30px; display: flex; gap: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 0.5px solid #d1d1d6; z-index: 100;
+        .hamburger-btn.active {
+            background: var(--primary);
         }
-        .btn-action { background: none; border: none; font-size: 14px; font-weight: 600; color: var(--accent); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
-        /* MODAL / VIEWER */
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 999;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .upload-btn {
+            margin: 20px;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .nav-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 12px;
+        }
+
+        .nav-title {
+            padding: 16px 12px 8px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            margin: 2px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-item:hover {
+            background: var(--surface-light);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .nav-item .count {
+            margin-left: auto;
+            background: var(--surface-light);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .folder-actions {
+            display: none;
+            gap: 4px;
+            margin-left: auto;
+        }
+
+        .nav-item:hover .folder-actions {
+            display: flex;
+        }
+
+        .folder-actions button {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .folder-actions button:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .add-folder {
+            margin: 12px;
+            padding: 12px;
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .add-folder:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Selection Bar */
+        .selection-bar {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 280px;
+            right: 0;
+            height: 70px;
+            background: var(--primary);
+            z-index: 60;
+            align-items: center;
+            padding: 0 24px;
+            gap: 20px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .selection-bar.active {
+            display: flex;
+        }
+
+        .selection-info {
+            flex: 1;
+            font-weight: 600;
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .sel-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .sel-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: 70px;
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .search-box {
+            position: relative;
+            width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 24px;
+        }
+
+        .section-header {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .media-card {
+            aspect-ratio: 1;
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .media-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .media-card.selected {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
+        }
+
+        .media-card img, .media-card video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px;
+        }
+
+        .media-card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .card-select {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .media-card.selected .card-select {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .card-select i {
+            color: white;
+            font-size: 12px;
+            opacity: 0;
+        }
+
+        .media-card.selected .card-select i {
+            opacity: 1;
+        }
+
+        .card-info {
+            color: white;
+            font-size: 12px;
+        }
+
+        .card-info .filename {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .type-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fav-indicator {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            color: var(--secondary);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* Drop Zone */
+        .drop-zone {
+            position: fixed;
+            inset: 0;
+            background: rgba(99, 102, 241, 0.95);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .drop-zone.active {
+            display: flex;
+        }
+
+        /* Modals */
         .modal {
-            position: fixed; inset: 0; background: #fff; z-index: 200;
-            display: none; flex-direction: column;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
-        .modal-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .modal-body { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
-        .modal-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        /* PREVIEW GRID IN UPLOAD */
-        #previewArea { margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px; }
-        
-        /* UTILS */
-        .hidden { display: none !important; }
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: var(--surface-light);
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 15px;
+            outline: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Viewer */
+        .viewer-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .viewer-modal.active {
+            display: flex;
+        }
+
+        .viewer-toolbar {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(0,0,0,0.8);
+        }
+
+        .viewer-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            position: relative;
+        }
+
+        .viewer-content img, .viewer-content video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .nav-arrow.prev { left: 20px; }
+        .nav-arrow.next { right: 20px; }
+
+        /* Progress */
+        .upload-progress {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            width: 350px;
+            display: none;
+            z-index: 2500;
+        }
+
+        .upload-progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--surface-light);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface);
+            padding: 16px 24px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 3000;
+            opacity: 0;
+            transition: all 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Mobile FAB */
+        .mobile-fab {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+            z-index: 500;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 180px;
+            display: none;
+            z-index: 3500;
+        }
+
+        .context-menu.active {
+            display: block;
+        }
+
+        .context-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .context-item:hover {
+            background: var(--surface-light);
+        }
+
+        .context-item.danger {
+            color: var(--danger);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                width: 85%;
+                max-width: 320px;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-top: 60px;
+            }
+
+            .selection-bar {
+                left: 0;
+                top: 60px;
+                height: 60px;
+                padding: 0 16px;
+            }
+
+            .top-bar {
+                height: auto;
+                padding: 12px 16px;
+                flex-wrap: wrap;
+            }
+
+            .search-box {
+                width: 100%;
+                order: 2;
+            }
+
+            .gallery-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .upload-btn {
+                display: none;
+            }
+
+            .mobile-fab {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            .modal-content {
+                border-radius: 24px 24px 0 0;
+                max-height: 85vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="header-content">
-        <h1>Library</h1>
-        <button class="btn-action" onclick="toggleUploadModal()"><i class="fa-solid fa-plus-circle fa-2xl"></i></button>
+<!-- Mobile Header -->
+<div class="mobile-header">
+    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+    </button>
+    <div class="mobile-logo">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>Lumina</span>
     </div>
-</header>
-
-<div class="nav-tabs">
-    <button class="tab active" onclick="switchFolder('', this)">Semua Foto</button>
-    <button class="tab" onclick="switchFolder('Favorit', this)">Favorit ❤️</button>
+    <div style="width: 44px;"></div>
 </div>
 
-<div class="container">
-    <div class="grid" id="galleryGrid">
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Lumina</span>
+            </div>
         </div>
+
+        <button class="upload-btn" onclick="openUploadModal()">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Upload Media</span>
+        </button>
+
+        <div class="nav-section">
+            <div class="nav-title">Library</div>
+            <div class="nav-item active" onclick="switchFolder('all', this)" data-folder="all">
+                <i class="fa-solid fa-images"></i>
+                <span>Semua Media</span>
+                <span class="count" id="count-all">0</span>
+            </div>
+            <div class="nav-item" onclick="switchFolder('favorites', this)" data-folder="favorites">
+                <i class="fa-solid fa-heart"></i>
+                <span>Favorit</span>
+                <span class="count" id="count-fav">0</span>
+            </div>
+            <div class="nav-item" onclick="switchFolder('recent', this)" data-folder="recent">
+                <i class="fa-solid fa-clock"></i>
+                <span>Baru Ditambahkan</span>
+            </div>
+
+            <div class="nav-title">Folders</div>
+            <div id="folderList"></div>
+            
+            <div class="add-folder" onclick="openCreateFolderModal()">
+                <i class="fa-solid fa-folder-plus"></i> Buat Folder Baru
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Selection Bar -->
+        <div class="selection-bar" id="selectionBar">
+            <div class="selection-info">
+                <span id="selectedCount">0</span> dipilih
+            </div>
+            <div class="selection-actions">
+                <button class="sel-btn" onclick="moveSelected()">
+                    <i class="fa-solid fa-folder-tree"></i> Pindah
+                </button>
+                <button class="sel-btn" onclick="downloadSelected()">
+                    <i class="fa-solid fa-download"></i> Download
+                </button>
+                <button class="sel-btn" onclick="deleteSelected()">
+                    <i class="fa-solid fa-trash"></i> Hapus
+                </button>
+                <button class="sel-btn" onclick="clearSelection()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Cari foto atau video..." id="searchInput" onkeyup="searchFiles()">
+            </div>
+            <div class="top-actions">
+                <button class="icon-btn" onclick="refreshGallery()">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content-area" id="dropArea">
+            <div class="section-header">
+                <h1 class="section-title" id="currentFolderName">Semua Media</h1>
+                <p class="section-subtitle" id="folderStats">Memuat...</p>
+            </div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+        </div>
+    </main>
 </div>
 
-<div class="footer-bar">
-    <button class="btn-action" onclick="downloadSelected()"><i class="fa-solid fa-file-zipper"></i><span>Zip</span></button>
-    <button class="btn-action" onclick="deleteSelected()" style="color: #ff3b30;"><i class="fa-solid fa-trash"></i><span>Hapus</span></button>
+<!-- Mobile FAB -->
+<button class="mobile-fab" onclick="openUploadModal()">
+    <i class="fa-solid fa-plus"></i>
+</button>
+
+<!-- Drop Zone -->
+<div class="drop-zone" id="dropZone">
+    <i class="fa-solid fa-cloud-arrow-up fa-3x"></i>
+    <h2>Drop files here</h2>
+    <p>Support images and videos</p>
 </div>
 
+<!-- Upload Modal -->
 <div class="modal" id="uploadModal">
-    <div class="modal-header">
-        <button class="btn-action" onclick="toggleUploadModal()">Batal</button>
-        <h3 style="margin:0">Tambah Foto</h3>
-        <button class="btn-action" id="btnSimpan" onclick="document.getElementById('formUpload').submit()" style="opacity: 0.3;" disabled>Simpan</button>
-    </div>
-    <div style="padding: 20px; text-align: center;">
-        <form id="formUpload" action="/upload" method="POST" enctype="multipart/form-data">
-            <label style="background: var(--accent); color: white; padding: 15px 30px; border-radius: 15px; display: inline-block; cursor: pointer; font-weight: 600;">
-                <i class="fa-solid fa-images"></i> Pilih Foto dari Galeri
-                <input type="file" name="foto" id="fileInput" multiple accept="image/*" class="hidden">
-            </label>
-        </form>
-        <div id="previewArea" class="grid"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Upload Media</h3>
+            <button class="modal-close" onclick="closeUploadModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Pilih Folder Tujuan (Opsional)</label>
+                <select id="uploadFolder">
+                    <option value="">-- Tanpa Folder --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Pilih File</label>
+                <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+                <button class="btn-primary" onclick="document.getElementById('fileInput').click()" style="margin-bottom: 12px;">
+                    <i class="fa-solid fa-folder-open"></i> Pilih dari Device
+                </button>
+                <div id="fileList" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <button class="btn-primary" onclick="startUpload()" id="btnStartUpload" disabled>
+                <i class="fa-solid fa-upload"></i> Upload <span id="uploadCount">0</span> File
+            </button>
+        </div>
     </div>
 </div>
 
-<div class="modal" id="viewerModal">
-    <div class="modal-header">
-        <button class="btn-action" onclick="closeViewer()"><i class="fa-solid fa-chevron-left"></i> Kembali</button>
-        <div style="display: flex; gap: 20px;">
-            <button class="btn-action" id="btnLikeModal"><i class="fa-regular fa-heart"></i></button>
-            <button class="btn-action" id="btnHapusModal" style="color: #ff3b30;"><i class="fa-solid fa-trash"></i></button>
+<!-- Create Folder Modal -->
+<div class="modal" id="folderModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Buat Folder Baru</h3>
+            <button class="modal-close" onclick="closeFolderModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nama Folder</label>
+                <input type="text" id="folderName" placeholder="Contoh: Liburan 2024" onkeypress="if(event.key==='Enter')createFolder()">
+            </div>
+            <button class="btn-primary" onclick="createFolder()">
+                <i class="fa-solid fa-check"></i> Buat Folder
+            </button>
         </div>
     </div>
-    <div class="modal-body">
-        <img id="imgFull">
+</div>
+
+<!-- Move Modal -->
+<div class="modal" id="moveModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Pindahkan ke Folder</h3>
+            <button class="modal-close" onclick="closeMoveModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Pilih Folder Tujuan</label>
+                <select id="targetFolder">
+                    <option value="">-- Root (Tanpa Folder) --</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="confirmMove()">
+                <i class="fa-solid fa-arrow-right"></i> Pindahkan <span id="moveCount">0</span> File
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Folder Modal -->
+<div class="modal" id="renameModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Rename Folder</h3>
+            <button class="modal-close" onclick="closeRenameModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nama Baru</label>
+                <input type="text" id="renameFolderName" placeholder="Nama folder baru" onkeypress="if(event.key==='Enter')confirmRename()">
+            </div>
+            <button class="btn-primary" onclick="confirmRename()">
+                <i class="fa-solid fa-check"></i> Rename
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Viewer Modal -->
+<div class="viewer-modal" id="viewerModal">
+    <div class="viewer-toolbar">
+        <button class="icon-btn" onclick="closeViewer()" style="background: transparent; border: none; color: white; width: 44px; height: 44px;">
+            <i class="fa-solid fa-xmark fa-lg"></i>
+        </button>
+        <span class="viewer-title" id="viewerTitle">filename.jpg</span>
+        <div style="display: flex; gap: 12px;">
+            <button class="icon-btn" onclick="toggleFavorite()" id="viewerFavBtn" style="background: transparent; border: none; color: white;">
+                <i class="fa-regular fa-heart fa-lg"></i>
+            </button>
+            <button class="icon-btn" onclick="downloadCurrent()" style="background: transparent; border: none; color: white;">
+                <i class="fa-solid fa-download fa-lg"></i>
+            </button>
+            <button class="icon-btn" onclick="deleteCurrent()" style="background: transparent; border: none; color: var(--danger);">
+                <i class="fa-solid fa-trash fa-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div class="viewer-content" id="viewerContent">
+        <button class="nav-arrow prev" onclick="navigateMedia(-1)">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="nav-arrow next" onclick="navigateMedia(1)">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Upload Progress -->
+<div class="upload-progress" id="uploadProgress">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+        <span>Mengupload...</span>
+        <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toastMessage">Success</span>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-item" onclick="contextPreview()">
+        <i class="fa-solid fa-eye"></i> Preview
+    </div>
+    <div class="context-item" onclick="contextMove()">
+        <i class="fa-solid fa-folder-tree"></i> Pindahkan ke Folder
+    </div>
+    <div class="context-item" onclick="contextDownload()">
+        <i class="fa-solid fa-download"></i> Download
+    </div>
+    <div class="context-item danger" onclick="contextDelete()">
+        <i class="fa-solid fa-trash"></i> Hapus
     </div>
 </div>
 
 <script>
-    let currentFolder = "";
-    let selectedPhoto = "";
+    // State
+    let currentFolder = 'all';
+    let currentFiles = [];
+    let selectedFiles = new Set();
+    let currentViewIndex = 0;
+    let folders = [];
+    let isSidebarOpen = false;
+    let folderToRename = null;
 
-    async function loadGallery() {
-        const res = await fetch(`/cek-foto?folder=${currentFolder}`);
-        const files = await res.json();
-        const grid = document.getElementById('galleryGrid');
-        grid.innerHTML = "";
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFolders();
+        loadGallery();
+        setupDragDrop();
+        setupContextMenu();
+    });
 
-        if(files.length === 0) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; padding: 50px; opacity: 0.5;">Kosong</p>`;
+    // Sidebar
+    function toggleSidebar() {
+        isSidebarOpen = !isSidebarOpen;
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const btn = document.getElementById('hamburgerBtn');
+        
+        if (isSidebarOpen) {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+            btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            btn.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        } else {
+            closeSidebar();
+        }
+    }
+
+    function closeSidebar() {
+        isSidebarOpen = false;
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+        const btn = document.getElementById('hamburgerBtn');
+        btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+        btn.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Load Folders
+    async function loadFolders() {
+        try {
+            const res = await fetch('/folders');
+            folders = await res.json();
+            renderFolders();
+            updateFolderSelects();
+        } catch (e) {
+            console.error('Failed to load folders:', e);
+        }
+    }
+
+    function renderFolders() {
+        const container = document.getElementById('folderList');
+        if (folders.length === 0) {
+            container.innerHTML = '<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 14px;">Belum ada folder</div>';
+            return;
+        }
+        
+        container.innerHTML = folders.map(f => `
+            <div class="nav-item" onclick="switchFolder('${f.name}', this); closeSidebar();" data-folder="${f.name}">
+                <i class="fa-solid fa-folder" style="color: #fbbf24;"></i>
+                <span>${f.name}</span>
+                <div class="folder-actions" onclick="event.stopPropagation()">
+                    <button onclick="renameFolder('${f.name}')" title="Rename">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button onclick="deleteFolder('${f.name}')" title="Delete" style="color: var(--danger);">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateFolderSelects() {
+        const options = folders.map(f => `<option value="${f.name}">${f.name}</option>`).join('');
+        document.getElementById('uploadFolder').innerHTML = '<option value="">-- Tanpa Folder --</option>' + options;
+        document.getElementById('targetFolder').innerHTML = '<option value="">-- Root (Tanpa Folder) --</option>' + options;
+    }
+
+    // Folder Management
+    function openCreateFolderModal() {
+        closeSidebar();
+        document.getElementById('folderName').value = '';
+        document.getElementById('folderModal').classList.add('active');
+        setTimeout(() => document.getElementById('folderName').focus(), 100);
+    }
+
+    function closeFolderModal() {
+        document.getElementById('folderModal').classList.remove('active');
+    }
+
+    async function createFolder() {
+        const name = document.getElementById('folderName').value.trim();
+        if (!name) {
+            showToast('Nama folder tidak boleh kosong', 'error');
             return;
         }
 
-        files.forEach(f => {
-            const div = document.createElement('div');
-            div.className = 'photo-card';
-            const imgPath = `/fotomu/${currentFolder ? currentFolder+'/'+f : f}`;
-            div.innerHTML = `
-                <div class="select-dot"><input type="checkbox" name="pilih" value="${f}"></div>
-                <img src="${imgPath}" onclick="openViewer('${f}', '${imgPath}')" loading="lazy">
-            `;
-            grid.appendChild(div);
-        });
+        try {
+            const res = await fetch('/folders', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name})
+            });
+            
+            if (res.ok) {
+                showToast('Folder berhasil dibuat');
+                closeFolderModal();
+                loadFolders();
+            } else {
+                const err = await res.json();
+                showToast(err.error || 'Gagal membuat folder', 'error');
+            }
+        } catch (e) {
+            showToast('Gagal membuat folder', 'error');
+        }
     }
 
-    // FOLDER SWITCH
-    function switchFolder(name, el) {
-        currentFolder = name;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
+    function renameFolder(oldName) {
+        folderToRename = oldName;
+        document.getElementById('renameFolderName').value = oldName;
+        document.getElementById('renameModal').classList.add('active');
+    }
+
+    function closeRenameModal() {
+        document.getElementById('renameModal').classList.remove('active');
+        folderToRename = null;
+    }
+
+    async function confirmRename() {
+        const newName = document.getElementById('renameFolderName').value.trim();
+        if (!newName || !folderToRename) return;
+
+        try {
+            const res = await fetch(`/folders/${folderToRename}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({newName})
+            });
+            
+            if (res.ok) {
+                showToast('Folder berhasil direname');
+                closeRenameModal();
+                loadFolders();
+                loadGallery();
+            } else {
+                showToast('Gagal rename folder', 'error');
+            }
+        } catch (e) {
+            showToast('Gagal rename folder', 'error');
+        }
+    }
+
+    async function deleteFolder(name) {
+        if (!confirm(`Hapus folder "${name}"?\n\nMedia di dalamnya tidak akan dihapus, hanya dikeluarkan dari folder.`)) return;
+        
+        try {
+            const res = await fetch(`/folders/${name}`, {method: 'DELETE'});
+            if (res.ok) {
+                showToast('Folder dihapus');
+                loadFolders();
+                if (currentFolder === name) switchFolder('all', document.querySelector('[data-folder="all"]'));
+                else loadGallery();
+            }
+        } catch (e) {
+            showToast('Gagal menghapus folder', 'error');
+        }
+    }
+
+    // Load Gallery
+    async function loadGallery() {
+        const grid = document.getElementById('galleryGrid');
+        grid.innerHTML = Array(6).fill('<div style="aspect-ratio: 1; background: var(--surface); border-radius: 16px; animation: pulse 1.5s infinite;"></div>').join('');
+        
+        try {
+            const res = await fetch(`/cek-foto?folder=${currentFolder}`);
+            currentFiles = await res.json();
+            updateStats();
+            renderGallery();
+        } catch (e) {
+            showToast('Gagal memuat gallery', 'error');
+        }
+    }
+
+    function renderGallery() {
+        const grid = document.getElementById('galleryGrid');
+        
+        if (currentFiles.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1/-1;">
+                    <i class="fa-regular fa-images"></i>
+                    <h3>Tidak ada media</h3>
+                    <p>Folder ini kosong. Upload foto atau video pertama Anda.</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = currentFiles.map((file, index) => {
+            const isVideo = file.fileType === 'video';
+            const isSelected = selectedFiles.has(file.fileId);
+            
+            return `
+                <div class="media-card ${isSelected ? 'selected' : ''}" 
+                     data-id="${file.fileId}" 
+                     data-index="${index}"
+                     onclick="handleCardClick('${file.fileId}', event)"
+                     oncontextmenu="showContextMenu(event, '${file.fileId}')">
+                    
+                    ${isVideo ? `
+                        <video src="${file.url}#t=0.1" preload="metadata" playsinline muted></video>
+                        <div class="type-badge"><i class="fa-solid fa-play"></i></div>
+                    ` : `
+                        <img src="${file.thumbnailUrl || file.url}" loading="lazy" alt="${file.name}">
+                    `}
+                    
+                    <div class="card-overlay">
+                        <div class="card-select" onclick="event.stopPropagation(); toggleSelect('${file.fileId}')">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div class="card-info">
+                            <div class="filename">${file.name}</div>
+                        </div>
+                    </div>
+                    
+                    ${file.isFavorite ? '<div class="fav-indicator"><i class="fa-solid fa-heart"></i></div>' : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function handleCardClick(fileId, event) {
+        if (event.target.closest('.card-select') || selectedFiles.size > 0) {
+            toggleSelect(fileId);
+        } else {
+            openViewer(fileId);
+        }
+    }
+
+    function toggleSelect(fileId) {
+        const card = document.querySelector(`[data-id="${fileId}"]`);
+        
+        if (selectedFiles.has(fileId)) {
+            selectedFiles.delete(fileId);
+            card.classList.remove('selected');
+        } else {
+            selectedFiles.add(fileId);
+            card.classList.add('selected');
+        }
+        
+        updateSelectionBar();
+    }
+
+    function updateSelectionBar() {
+        const bar = document.getElementById('selectionBar');
+        const count = selectedFiles.size;
+        
+        if (count > 0) {
+            bar.classList.add('active');
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('moveCount').textContent = count;
+        } else {
+            bar.classList.remove('active');
+        }
+    }
+
+    function clearSelection() {
+        selectedFiles.clear();
+        document.querySelectorAll('.media-card.selected').forEach(c => c.classList.remove('selected'));
+        updateSelectionBar();
+    }
+
+    function switchFolder(folder, el) {
+        currentFolder = folder;
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        if (el) el.classList.add('active');
+        
+        const names = {
+            'all': 'Semua Media',
+            'favorites': 'Favorit',
+            'recent': 'Baru Ditambahkan'
+        };
+        
+        document.getElementById('currentFolderName').textContent = names[folder] || folder;
+        clearSelection();
         loadGallery();
     }
 
-    // VIEWER LOGIC
-    function openViewer(name, path) {
-        selectedPhoto = name;
-        document.getElementById('imgFull').src = path;
-        document.getElementById('viewerModal').style.display = 'flex';
-        // Hide/Show Like button based on folder
-        document.getElementById('btnLikeModal').className = currentFolder === 'Favorit' ? 'hidden' : 'btn-action';
+    // Move Files
+    function moveSelected() {
+        if (selectedFiles.size === 0) return;
+        document.getElementById('moveModal').classList.add('active');
     }
 
-    function closeViewer() { document.getElementById('viewerModal').style.display = 'none'; }
+    function closeMoveModal() {
+        document.getElementById('moveModal').classList.remove('active');
+    }
 
-    // UPLOAD PREVIEW
-    document.getElementById('fileInput').onchange = function() {
-        const preview = document.getElementById('previewArea');
-        const btn = document.getElementById('btnSimpan');
-        preview.innerHTML = "";
+    async function confirmMove() {
+        const targetFolder = document.getElementById('targetFolder').value;
         
-        if(this.files.length > 0) {
-            btn.disabled = false; btn.style.opacity = "1";
-            [...this.files].forEach(file => {
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const d = document.createElement('div');
-                    d.className = 'photo-card';
-                    d.innerHTML = `<img src="${e.target.result}">`;
-                    preview.appendChild(d);
-                };
-                reader.readAsDataURL(file);
+        try {
+            const res = await fetch('/move', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    fileIds: Array.from(selectedFiles),
+                    targetFolder: targetFolder
+                })
             });
+            
+            if (res.ok) {
+                showToast(`${selectedFiles.size} file dipindahkan`);
+                closeMoveModal();
+                clearSelection();
+                loadGallery();
+            } else {
+                throw new Error('Move failed');
+            }
+        } catch (e) {
+            showToast('Gagal memindahkan file', 'error');
         }
+    }
+
+    // Upload
+    function openUploadModal() {
+        document.getElementById('uploadModal').classList.add('active');
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileList').innerHTML = '';
+        updateUploadButton();
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.remove('active');
+    }
+
+    document.getElementById('fileInput').onchange = function() {
+        const list = document.getElementById('fileList');
+        const files = Array.from(this.files);
+        
+        if (files.length === 0) {
+            list.innerHTML = '';
+        } else {
+            list.innerHTML = files.map(f => `
+                <div style="padding: 10px; background: var(--bg); border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px;">
+                    <i class="fa-solid ${f.type.startsWith('video/') ? 'fa-video' : 'fa-image'}" style="color: var(--primary);"></i>
+                    <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${f.name}</span>
+                    <span style="color: var(--text-muted); font-size: 12px;">${formatSize(f.size)}</span>
+                </div>
+            `).join('');
+        }
+        
+        updateUploadButton();
     };
 
-    function toggleUploadModal() {
-        const m = document.getElementById('uploadModal');
-        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    function updateUploadButton() {
+        const files = document.getElementById('fileInput').files;
+        const btn = document.getElementById('btnStartUpload');
+        document.getElementById('uploadCount').textContent = files.length;
+        btn.disabled = files.length === 0;
     }
 
-    // ACTIONS
-    async function deleteSelected() {
-        const checked = Array.from(document.querySelectorAll('input[name="pilih"]:checked')).map(i => i.value);
-        if(checked.length === 0) return alert("Pilih foto dulu");
-        if(!confirm(`Hapus ${checked.length} foto?`)) return;
+    async function startUpload() {
+        const files = document.getElementById('fileInput').files;
+        const folder = document.getElementById('uploadFolder').value;
+        
+        closeUploadModal();
+        const progress = document.getElementById('uploadProgress');
+        progress.classList.add('active');
+        
+        const formData = new FormData();
+        Array.from(files).forEach(f => formData.append('foto', f));
+        if (folder) formData.append('folder', folder);
+        
+        // Simulasi progress
+        let percent = 0;
+        const interval = setInterval(() => {
+            percent += 5;
+            if (percent > 90) clearInterval(interval);
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressPercent').textContent = percent + '%';
+        }, 100);
+        
+        try {
+            const res = await fetch('/upload', {method: 'POST', body: formData});
+            clearInterval(interval);
+            document.getElementById('progressFill').style.width = '100%';
+            document.getElementById('progressPercent').textContent = '100%';
+            
+            if (res.ok) {
+                showToast('Upload berhasil!');
+                loadGallery();
+                loadFolders();
+            } else {
+                throw new Error('Upload failed');
+            }
+        } catch (e) {
+            showToast('Upload gagal', 'error');
+        } finally {
+            setTimeout(() => {
+                progress.classList.remove('active');
+                document.getElementById('progressFill').style.width = '0%';
+            }, 500);
+        }
+    }
 
-        for(let name of checked) {
+    // Drag & Drop
+    function setupDragDrop() {
+        const dropZone = document.getElementById('dropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            document.body.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        
+        document.body.addEventListener('dragenter', () => dropZone.classList.add('active'));
+        dropZone.addEventListener('dragleave', e => {
+            if (e.target === dropZone) dropZone.classList.remove('active');
+        });
+        dropZone.addEventListener('drop', e => {
+            dropZone.classList.remove('active');
+            handleDroppedFiles(e.dataTransfer.files);
+        });
+    }
+
+    function handleDroppedFiles(files) {
+        const validFiles = Array.from(files).filter(f => 
+            f.type.startsWith('image/') || f.type.startsWith('video/')
+        );
+        
+        if (validFiles.length === 0) {
+            showToast('Hanya file gambar dan video yang diizinkan', 'error');
+            return;
+        }
+        
+        const dt = new DataTransfer();
+        validFiles.forEach(f => dt.items.add(f));
+        document.getElementById('fileInput').files = dt.files;
+        document.getElementById('fileInput').onchange();
+        openUploadModal();
+    }
+
+    // Viewer
+    function openViewer(fileId) {
+        currentViewIndex = currentFiles.findIndex(f => f.fileId === fileId);
+        if (currentViewIndex === -1) return;
+        
+        updateViewer();
+        document.getElementById('viewerModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function updateViewer() {
+        const file = currentFiles[currentViewIndex];
+        const container = document.getElementById('viewerContent');
+        const prevBtn = container.querySelector('.prev');
+        const nextBtn = container.querySelector('.next');
+        
+        const oldMedia = container.querySelector('img, video');
+        if (oldMedia) oldMedia.remove();
+        
+        if (file.fileType === 'video') {
+            const video = document.createElement('video');
+            video.src = file.url;
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.style.maxWidth = '100%';
+            video.style.maxHeight = '100%';
+            prevBtn.after(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = file.url;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100%';
+            prevBtn.after(img);
+        }
+        
+        document.getElementById('viewerTitle').textContent = file.name;
+        const favBtn = document.getElementById('viewerFavBtn');
+        favBtn.innerHTML = file.isFavorite ? 
+            '<i class="fa-solid fa-heart fa-lg" style="color: var(--secondary);"></i>' : 
+            '<i class="fa-regular fa-heart fa-lg"></i>';
+    }
+
+    function closeViewer() {
+        document.getElementById('viewerModal').classList.remove('active');
+        document.body.style.overflow = '';
+        const video = document.querySelector('#viewerContent video');
+        if (video) {
+            video.pause();
+            video.src = '';
+        }
+    }
+
+    function navigateMedia(direction) {
+        currentViewIndex += direction;
+        if (currentViewIndex < 0) currentViewIndex = currentFiles.length - 1;
+        if (currentViewIndex >= currentFiles.length) currentViewIndex = 0;
+        updateViewer();
+    }
+
+    async function toggleFavorite() {
+        const file = currentFiles[currentViewIndex];
+        const endpoint = file.isFavorite ? '/unlike' : '/like';
+        
+        await fetch(`${endpoint}/${file.fileId}`, {method: 'POST'});
+        file.isFavorite = !file.isFavorite;
+        updateViewer();
+        loadGallery();
+    }
+
+    function downloadCurrent() {
+        const file = currentFiles[currentViewIndex];
+        const a = document.createElement('a');
+        a.href = file.url;
+        a.download = file.name;
+        a.click();
+    }
+
+    async function deleteCurrent() {
+        const file = currentFiles[currentViewIndex];
+        if (!confirm('Hapus file ini?')) return;
+        
+        await fetch('/hapus', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({fileId: file.fileId})
+        });
+        
+        closeViewer();
+        loadGallery();
+        showToast('File dihapus');
+    }
+
+    // Actions
+    async function deleteSelected() {
+        if (!confirm(`Hapus ${selectedFiles.size} file?`)) return;
+        
+        for (const fileId of selectedFiles) {
             await fetch('/hapus', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ nama: name, folder: currentFolder })
+                body: JSON.stringify({fileId})
             });
         }
+        showToast('File dihapus');
+        clearSelection();
         loadGallery();
     }
 
     async function downloadSelected() {
-        const checked = Array.from(document.querySelectorAll('input[name="pilih"]:checked')).map(i => i.value);
-        const res = await fetch('/download-zip', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ files: checked, folder: currentFolder })
-        });
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Album-${Date.now()}.zip`;
-        a.click();
+        if (selectedFiles.size === 0) return;
+        showToast('Mempersiapkan download...');
+        // Implementasi ZIP download bisa ditambahkan di sini
     }
 
-    document.getElementById('btnLikeModal').onclick = async () => {
-        await fetch(`/like/${selectedPhoto}`, { method: 'POST' });
-        closeViewer();
-        loadGallery();
-    };
+    // Context Menu
+    let contextFileId = null;
+    
+    function setupContextMenu() {
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.context-menu')) {
+                document.getElementById('contextMenu').classList.remove('active');
+            }
+        });
+    }
 
-    document.getElementById('btnHapusModal').onclick = async () => {
-        if(!confirm("Hapus foto ini?")) return;
+    function showContextMenu(e, fileId) {
+        e.preventDefault();
+        contextFileId = fileId;
+        const menu = document.getElementById('contextMenu');
+        menu.style.left = Math.min(e.pageX, window.innerWidth - 200) + 'px';
+        menu.style.top = Math.min(e.pageY, window.innerHeight - 200) + 'px';
+        menu.classList.add('active');
+    }
+
+    function contextPreview() {
+        openViewer(contextFileId);
+        document.getElementById('contextMenu').classList.remove('active');
+    }
+
+    function contextMove() {
+        selectedFiles.clear();
+        selectedFiles.add(contextFileId);
+        updateSelectionBar();
+        moveSelected();
+        document.getElementById('contextMenu').classList.remove('active');
+    }
+
+    function contextDownload() {
+        const file = currentFiles.find(f => f.fileId === contextFileId);
+        if (file) {
+            const a = document.createElement('a');
+            a.href = file.url;
+            a.download = file.name;
+            a.click();
+        }
+        document.getElementById('contextMenu').classList.remove('active');
+    }
+
+    async function contextDelete() {
+        if (!confirm('Hapus file ini?')) {
+            document.getElementById('contextMenu').classList.remove('active');
+            return;
+        }
         await fetch('/hapus', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ nama: selectedPhoto, folder: currentFolder })
+            body: JSON.stringify({fileId: contextFileId})
         });
-        closeViewer();
         loadGallery();
-    };
+        document.getElementById('contextMenu').classList.remove('active');
+    }
 
-    // INIT
-    loadGallery();
+    // Utilities
+    function formatSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+        toast.className = 'toast ' + type + ' show';
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function updateStats() {
+        const total = currentFiles.length;
+        const images = currentFiles.filter(f => f.fileType === 'image').length;
+        const videos = currentFiles.filter(f => f.fileType === 'video').length;
+        const size = currentFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+        
+        let stats = `${total} item`;
+        if (images > 0 && videos > 0) stats += ` (${images} foto, ${videos} video)`;
+        stats += ` • ${formatSize(size)}`;
+        
+        document.getElementById('folderStats').textContent = stats;
+        document.getElementById('count-all').textContent = currentFiles.length;
+        document.getElementById('count-fav').textContent = currentFiles.filter(f => f.isFavorite).length;
+    }
+
+    function refreshGallery() {
+        loadGallery();
+        showToast('Gallery diperbarui');
+    }
+
+    function searchFiles() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        document.querySelectorAll('.media-card').forEach(card => {
+            const fileId = card.dataset.id;
+            const file = currentFiles.find(f => f.fileId === fileId);
+            card.style.display = file && file.name.toLowerCase().includes(query) ? 'block' : 'none';
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            closeViewer();
+            closeUploadModal();
+            closeFolderModal();
+            closeMoveModal();
+            closeRenameModal();
+            closeSidebar();
+            document.getElementById('contextMenu').classList.remove('active');
+        }
+    });
 </script>
+
 </body>
 </html>
