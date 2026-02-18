@@ -11,20 +11,17 @@ const config = require("./config");
 const app = express();
 const PORT = process.env.PORT || config.server.port;
 
-// Konfigurasi ImageKit
 const imagekit = new ImageKit({
   publicKey: config.imagekit.publicKey,
   privateKey: config.imagekit.privateKey,
   urlEndpoint: config.imagekit.urlEndpoint
 });
 
-// Path untuk metadata
 const ROOT_DIR = config.server.isVercel ? "/tmp" : __dirname;
 const META_DIR = path.join(ROOT_DIR, "metadata");
 
 if (!fs.existsSync(META_DIR)) fs.mkdirSync(META_DIR, { recursive: true });
 
-// Konfigurasi Multer
 const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
@@ -48,12 +45,10 @@ const upload = multer({
   }
 });
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Helper functions
 const loadMetadata = () => {
   const metaPath = path.join(META_DIR, "files.json");
   if (fs.existsSync(metaPath)) {
@@ -67,14 +62,45 @@ const saveMetadata = (data) => {
   fs.writeFileSync(metaPath, JSON.stringify(data, null, 2));
 };
 
-const uploadToImageKit = async (buffer, fileName, folder = "fotomu") => {
+// Helper: Deteksi tipe file dari mimetype
+const getFileType = (mimetype) => {
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('image/')) return 'image';
+  return 'file';
+};
+
+const uploadToImageKit = async (buffer, fileName, folder = "fotomu", mimetype) => {
   try {
-    const result = await imagekit.upload({
+    // Tentukan tipe file untuk ImageKit
+    const fileType = getFileType(mimetype);
+    
+    const uploadOptions = {
       file: buffer,
       fileName: fileName,
       folder: folder,
       useUniqueFileName: true
-    });
+    };
+    
+    // Jika video, tambahkan parameter khusus
+    if (fileType === 'video') {
+      uploadOptions.isPrivateFile = false;
+      // Force ImageKit untuk mengenali sebagai video
+      uploadOptions.extensions = [
+        {
+          name: "google-auto-tagging",
+          maxTags: 5,
+          minConfidence: 95
+        }
+      ];
+    }
+    
+    const result = await imagekit.upload(uploadOptions);
+    
+    // Override fileType jika ImageKit salah deteksi
+    if (fileType === 'video' && result.fileType !== 'video') {
+      result.fileType = 'video';
+    }
+    
     return result;
   } catch (error) {
     throw new Error(`Upload failed: ${error.message}`);
@@ -86,21 +112,16 @@ const deleteFromImageKit = async (fileId) => {
     await imagekit.deleteFile(fileId);
     return true;
   } catch (error) {
-    console.error("Delete error:", error);
+    console.error("Delete error:", error.message || error);
     return false;
   }
 };
 
-// ==================== ENDPOINTS ====================
-
-// Get all folders
 app.get("/folders", (req, res) => {
   const metadata = loadMetadata();
   res.json(metadata.folders || []);
 });
 
-// Create new folder
-// Create new folder
 app.post("/folders", (req, res) => {
   const { name } = req.body;
   if (!name || name.trim() === "") {
@@ -110,9 +131,8 @@ app.post("/folders", (req, res) => {
   const folderName = name.trim();
   const metadata = loadMetadata();
   
-  // Cek duplikat
   if (metadata.folders && metadata.folders.find(f => f.name === folderName)) {
-    return res.status(400).json({ error: "Folder sudah ada" }); // <-- YANG DIperbaiki
+    return res.status(400).json({ error: "Folder sudah ada" });
   }
 
   metadata.folders = metadata.folders || [];
@@ -125,28 +145,6 @@ app.post("/folders", (req, res) => {
   res.json({ success: true, folder: folderName });
 });
 
-
-// Delete folder
-app.delete("/folders/:name", (req, res) => {
-  const folderName = req.params.name;
-  const metadata = loadMetadata();
-
-  // Hapus folder dari list
-  metadata.folders = (metadata.folders || []).filter(f => f.name !== folderName);
-  
-  // Pindahkan semua file di folder ke root (update metadata lokal saja, file di ImageKit tetap)
-  metadata.files = metadata.files || [];
-  metadata.files.forEach(f => {
-    if (f.folder === folderName) {
-      f.folder = "";
-    }
-  });
-
-  saveMetadata(metadata);
-  res.json({ success: true });
-});
-
-// Rename folder
 app.put("/folders/:name", (req, res) => {
   const oldName = req.params.name;
   const { newName } = req.body;
@@ -162,10 +160,12 @@ app.put("/folders/:name", (req, res) => {
     return res.status(404).json({ error: "Folder tidak ditemukan" });
   }
 
-  // Update nama folder
+  if (metadata.folders.find(f => f.name === newName.trim() && f.name !== oldName)) {
+    return res.status(400).json({ error: "Nama folder sudah digunakan" });
+  }
+
   folder.name = newName.trim();
   
-  // Update semua file yang ada di folder tersebut
   metadata.files.forEach(f => {
     if (f.folder === oldName) {
       f.folder = newName.trim();
@@ -176,7 +176,23 @@ app.put("/folders/:name", (req, res) => {
   res.json({ success: true });
 });
 
-// Move files to folder
+app.delete("/folders/:name", (req, res) => {
+  const folderName = req.params.name;
+  const metadata = loadMetadata();
+
+  metadata.folders = (metadata.folders || []).filter(f => f.name !== folderName);
+  
+  metadata.files = metadata.files || [];
+  metadata.files.forEach(f => {
+    if (f.folder === folderName) {
+      f.folder = "";
+    }
+  });
+
+  saveMetadata(metadata);
+  res.json({ success: true });
+});
+
 app.post("/move", async (req, res) => {
   const { fileIds, targetFolder } = req.body;
   
@@ -187,11 +203,16 @@ app.post("/move", async (req, res) => {
   const metadata = loadMetadata();
   metadata.files = metadata.files || [];
 
-  // Update folder untuk setiap file di metadata
   fileIds.forEach(fileId => {
     const file = metadata.files.find(f => f.fileId === fileId);
     if (file) {
       file.folder = targetFolder || "";
+    } else {
+      metadata.files.push({
+        fileId: fileId,
+        folder: targetFolder || "",
+        isFavorite: false
+      });
     }
   });
 
@@ -199,21 +220,30 @@ app.post("/move", async (req, res) => {
   res.json({ success: true, moved: fileIds.length });
 });
 
-// Get files with folder filter
 app.get("/cek-foto", async (req, res) => {
   const folder = req.query.folder || "";
   const metadata = loadMetadata();
   
   try {
-    // Ambil semua file dari ImageKit
     const imageKitFiles = await imagekit.listFiles({
       path: "fotomu",
       limit: 1000
     });
 
-    // Merge dengan metadata lokal (untuk folder dan favorites)
     const mergedFiles = imageKitFiles.map(ikFile => {
       const localData = metadata.files.find(f => f.fileId === ikFile.fileId) || {};
+      
+      // FIX: Deteksi ulang fileType berdasarkan extension jika ImageKit salah
+      let detectedFileType = ikFile.fileType;
+      const ext = path.extname(ikFile.name).toLowerCase();
+      const videoExts = ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.flv', '.wmv', '.m4v', '.3gp'];
+      const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.tiff'];
+      
+      if (videoExts.includes(ext) && detectedFileType !== 'video') {
+        detectedFileType = 'video';
+      } else if (imageExts.includes(ext) && detectedFileType !== 'image') {
+        detectedFileType = 'image';
+      }
       
       return {
         name: ikFile.name,
@@ -221,7 +251,7 @@ app.get("/cek-foto", async (req, res) => {
         url: ikFile.url,
         thumbnailUrl: ikFile.thumbnailUrl,
         size: ikFile.size,
-        fileType: ikFile.fileType,
+        fileType: detectedFileType, // Gunakan hasil deteksi yang sudah diperbaiki
         width: ikFile.width,
         height: ikFile.height,
         createdAt: ikFile.createdAt,
@@ -230,7 +260,6 @@ app.get("/cek-foto", async (req, res) => {
       };
     });
 
-    // Filter berdasarkan folder atau favorites
     let filteredFiles = mergedFiles;
     
     if (folder === 'favorites') {
@@ -240,11 +269,9 @@ app.get("/cek-foto", async (req, res) => {
         new Date(b.createdAt) - new Date(a.createdAt)
       ).slice(0, 50);
     } else if (folder && folder !== 'all') {
-      // Filter by specific folder
       filteredFiles = mergedFiles.filter(f => f.folder === folder);
     }
 
-    // Update metadata lokal dengan data terbaru
     metadata.files = mergedFiles.map(f => ({
       fileId: f.fileId,
       folder: f.folder,
@@ -258,7 +285,6 @@ app.get("/cek-foto", async (req, res) => {
   }
 });
 
-// Upload files
 app.post("/upload", upload.array("foto", config.upload.maxFiles), async (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: "Tidak ada file yang diupload" });
@@ -270,6 +296,10 @@ app.post("/upload", upload.array("foto", config.upload.maxFiles), async (req, re
   const metadata = loadMetadata();
   metadata.files = metadata.files || [];
 
+  const generateId = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
   for (const file of req.files) {
     try {
       const isImage = file.mimetype.startsWith('image/');
@@ -280,23 +310,33 @@ app.post("/upload", upload.array("foto", config.upload.maxFiles), async (req, re
         continue;
       }
       
-      // Upload ke ImageKit dengan folder path
-      const ikFolder = targetFolder ? `fotomu/${targetFolder}` : "fotomu";
-      const result = await uploadToImageKit(file.buffer, file.originalname, ikFolder);
+      const ext = path.extname(file.originalname);
+      const id4digit = generateId();
+      const newFileName = `fotomu${id4digit}${ext}`;
       
-      // Simpan ke metadata
+      const ikFolder = targetFolder ? `fotomu/${targetFolder}` : "fotomu";
+      
+      // FIX: Kirim mimetype ke fungsi upload
+      const result = await uploadToImageKit(file.buffer, newFileName, ikFolder, file.mimetype);
+      
+      // FIX: Pastikan fileType benar di response
+      const correctFileType = isVideo ? 'video' : 'image';
+      
       metadata.files.push({
         fileId: result.fileId,
         folder: targetFolder,
-        isFavorite: false
+        isFavorite: false,
+        fileType: correctFileType // Simpan tipe file di metadata
       });
       
       uploadResults.push({
         originalName: file.originalname,
+        newName: newFileName,
         fileId: result.fileId,
         url: result.url,
         thumbnailUrl: result.thumbnailUrl,
-        fileType: result.fileType
+        fileType: correctFileType, // FIX: Gunakan tipe yang sudah diverifikasi
+        size: result.size
       });
       
     } catch (error) {
@@ -313,7 +353,6 @@ app.post("/upload", upload.array("foto", config.upload.maxFiles), async (req, re
   });
 });
 
-// Like/Unlike
 app.post("/like/:fileId", (req, res) => {
   const metadata = loadMetadata();
   const { fileId } = req.params;
@@ -336,7 +375,6 @@ app.post("/unlike/:fileId", (req, res) => {
   res.json({ success: true });
 });
 
-// Delete file
 app.post("/hapus", async (req, res) => {
   const { fileId } = req.body;
   
@@ -345,23 +383,33 @@ app.post("/hapus", async (req, res) => {
   }
   
   try {
-    const success = await deleteFromImageKit(fileId);
-    if (success) {
-      const metadata = loadMetadata();
-      metadata.files = metadata.files.filter(f => f.fileId !== fileId);
-      metadata.favorites = metadata.favorites.filter(id => id !== fileId);
-      saveMetadata(metadata);
-      
-      res.json({ success: true });
-    } else {
-      res.status(500).json({ error: "Gagal menghapus file" });
+    const metadata = loadMetadata();
+    metadata.files = metadata.files.filter(f => f.fileId !== fileId);
+    metadata.favorites = metadata.favorites.filter(id => id !== fileId);
+    saveMetadata(metadata);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    let retries = 3;
+    let success = false;
+    
+    while (retries > 0 && !success) {
+      try {
+        success = await deleteFromImageKit(fileId);
+        if (success) break;
+      } catch (e) {
+        console.log(`Retry delete... ${retries} attempts left`);
+      }
+      retries--;
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
+    
+    res.json({ success: true, deletedFromCloud: success });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Download ZIP
 app.post("/download-zip", async (req, res) => {
   const { files, folder } = req.body;
   const archive = archiver("zip", { zlib: { level: 9 } });
@@ -374,8 +422,12 @@ app.post("/download-zip", async (req, res) => {
     
     if (files && files.length > 0) {
       for (const fileId of files) {
-        const fileDetails = await imagekit.getFileDetails(fileId);
-        filesToDownload.push(fileDetails);
+        try {
+          const fileDetails = await imagekit.getFileDetails(fileId);
+          filesToDownload.push(fileDetails);
+        } catch (e) {
+          console.error("Skip file not found:", fileId);
+        }
       }
     } else {
       const allFiles = await imagekit.listFiles({
@@ -405,7 +457,6 @@ app.post("/download-zip", async (req, res) => {
   }
 });
 
-// Error handling
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -415,7 +466,6 @@ app.use((error, req, res, next) => {
   res.status(500).json({ error: error.message });
 });
 
-// Start server
 if (!config.server.isProduction) {
   app.listen(PORT, () => console.log(`Server jalan di port ${PORT}`));
 }
