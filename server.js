@@ -69,7 +69,7 @@ const getFileType = (mimetype) => {
   return 'file';
 };
 
-const uploadToImageKit = async (buffer, fileName, folder = "fotomu", mimetype) => {
+const uploadToImageKit = async (buffer, fileName, folder = "TifaGalery", mimetype) => {
   try {
     // Tentukan tipe file untuk ImageKit
     const fileType = getFileType(mimetype);
@@ -226,7 +226,7 @@ app.get("/cek-foto", async (req, res) => {
   
   try {
     const imageKitFiles = await imagekit.listFiles({
-      path: "fotomu",
+      path: "TifaGalery",
       limit: 1000
     });
 
@@ -312,9 +312,9 @@ app.post("/upload", upload.array("foto", config.upload.maxFiles), async (req, re
       
       const ext = path.extname(file.originalname);
       const id4digit = generateId();
-      const newFileName = `fotomu${id4digit}${ext}`;
+      const newFileName = `TifaGalery${id4digit}${ext}`;
       
-      const ikFolder = targetFolder ? `fotomu/${targetFolder}` : "fotomu";
+      const ikFolder = targetFolder ? `TifaGalery/${targetFolder}` : "TifaGalery";
       
       // FIX: Kirim mimetype ke fungsi upload
       const result = await uploadToImageKit(file.buffer, newFileName, ikFolder, file.mimetype);
@@ -431,7 +431,7 @@ app.post("/download-zip", async (req, res) => {
       }
     } else {
       const allFiles = await imagekit.listFiles({
-        path: folder ? `fotomu/${folder}` : "fotomu",
+        path: folder ? `TifaGalery/${folder}` : "TifaGalery",
         limit: 1000
       });
       filesToDownload = allFiles;
